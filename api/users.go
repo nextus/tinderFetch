@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -17,6 +17,7 @@ type usersResponse struct {
 	Results []User `json:"results"`
 }
 
+// User data API representation
 type User struct {
 	ID            string    `json:"_id"`
 	Name          string    `json:"name"`
@@ -48,6 +49,7 @@ type User struct {
 	HideDistance bool    `json:"hide_distance"`
 }
 
+// Photo data API respresentation
 type Photo struct {
 	ID        string `json:"id"`
 	URL       string `json:"url"`
@@ -60,7 +62,7 @@ func (api *TinderAPI) GetUsers() ([]User, error) {
 	const endpoint = "/user/recs"
 	const method = "GET"
 	headers := &httpHeaders{}
-	(*headers)["Content-type"] = []string{api.contentType}
+	(*headers)["Content-type"] = []string{api.ContentType}
 	rawResponse, err := api.doAPICall(endpoint, method, headers, nil)
 	if err != nil {
 		return nil, err
@@ -80,7 +82,7 @@ func (api *TinderAPI) GetUser(id string) (*User, error) {
 	const method = "GET"
 	endpoint := fmt.Sprintf("/user/%s", id)
 	headers := &httpHeaders{}
-	(*headers)["Content-type"] = []string{api.contentType}
+	(*headers)["Content-type"] = []string{api.ContentType}
 	rawResponse, err := api.doAPICall(endpoint, method, headers, nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func (api *TinderAPI) GetUser(id string) (*User, error) {
 		return nil, err
 	}
 	if response.Status != http.StatusOK {
-		return nil, fmt.Errorf("Got bad API response with status %d", response.Status)
+		return nil, fmt.Errorf("got bad API response with status %d", response.Status)
 	}
 	return &response.Results, nil
 

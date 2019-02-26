@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
-	tinderAPIHost        = "https://api.gotinder.com"
-	tinderAPIContentType = "application/json"
-	tinderAPIUserAgent   = "Tinder/7.5.3 (iPhone; iOS 10.3.2; Scale/2.00)"
+	DefaultTinderAPIHost        = "https://api.gotinder.com"
+	DefaultTinderAPIContentType = "application/json"
+	DefaultTinderAPIUserAgent   = "Tinder/7.5.3 (iPhone; iOS 10.3.2; Scale/2.00)"
 )
 
 type httpHeaders map[string][]string
@@ -21,14 +22,15 @@ type httpHeaders map[string][]string
 // TinderAPI only API methods are exported
 type TinderAPI struct {
 	token       string
-	host        string
-	contentType string
-	userAgent   string
+	Host        string
+	ContentType string
+	UserAgent   string
+	Timeout     time.Duration
 }
 
-func doHTTPRequest(httpURL *url.URL, method string, headers *httpHeaders, requestBody io.Reader) (*http.Response, error) {
+func doHTTPRequest(timeout time.Duration, httpURL *url.URL, method string, headers *httpHeaders, requestBody io.Reader) (*http.Response, error) {
 	client := &http.Client{
-		Timeout: httpTimeout,
+		Timeout: timeout,
 	}
 	request, err := http.NewRequest(method, httpURL.String(), requestBody)
 	if err != nil {
@@ -45,16 +47,16 @@ func doHTTPRequest(httpURL *url.URL, method string, headers *httpHeaders, reques
 }
 
 func (api *TinderAPI) doAPICall(endpoint, method string, headers *httpHeaders, requestBody io.Reader) ([]byte, error) {
-	apiRequest, err := url.Parse(api.host + endpoint)
+	apiRequest, err := url.Parse(api.Host + endpoint)
 	if err != nil {
 		return nil, err
 	}
 	if headers == nil {
 		headers = &httpHeaders{}
 	}
-	(*headers)["User-agent"] = []string{api.userAgent}
+	(*headers)["User-agent"] = []string{api.UserAgent}
 	(*headers)["X-Auth-Token"] = []string{api.token}
-	response, err := doHTTPRequest(apiRequest, method, headers, requestBody)
+	response, err := doHTTPRequest(api.Timeout, apiRequest, method, headers, requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +70,6 @@ func (api *TinderAPI) doAPICall(endpoint, method string, headers *httpHeaders, r
 		return nil, fmt.Errorf("http: unsuccessful response %d", response.StatusCode)
 	}
 	return body, nil
-
 }
 
 // Dislike someone by id
@@ -82,4 +83,15 @@ func (api *TinderAPI) Dislike(id string) error {
 		return err
 	}
 	return nil
+}
+
+// New return new API object
+func New(token string, timeout time.Duration) *TinderAPI {
+	return &TinderAPI{
+		token:       token,
+		Host:        DefaultTinderAPIHost,
+		ContentType: DefaultTinderAPIContentType,
+		UserAgent:   DefaultTinderAPIUserAgent,
+		Timeout:     timeout,
+	}
 }
